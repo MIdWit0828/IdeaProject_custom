@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.MidWit.jframe.model.dao.IdeaDAO">
+
+    <!--모든 아이디어 검색-->
+    <resultMap id="ideaDTO" type="DTO">
+        <id property="ideaCode" column="idea_code"/>
+        <result property="ideaName" column="idea_name"/>
+        <result property="ideaRank" column="idea_rank"/>
+        <result property="workCount" column="work_count"/>
+        <result property="typeCode" column="type_code"/>
+        <result property="workStatus" column="work_status"/>
+        <association property="typeDTO  " javaType="TypeDTO">
+            <id property="typeCode" column="type_code"/>
+            <result property="typeName" column="type_name"/>
+        </association>
+    </resultMap>
+    <select id="selectAllIdea" resultType="DTO">
+        SELECT i.idea_code,
+               i.idea_name,
+               i.idea_rank,
+               i.work_count,
+               i.work_status,
+               i.type_code,
+               t.type_code,
+               t.type_name
+        FROM
+            tbl_idea i
+        JOIN
+            tbl_type t USING (type_code)
+        WHERE work_status = 'N'
+        ORDER BY
+            idea_code
+    </select>
+
+    <!--조건으로 아이디어 검색-->
+    <select id="selectIdeaByCondition" resultType="DTO">
+        SELECT i.*
+        FROM
+            tbl_idea i
+        JOIN tbl_type t USING (type_code)
+        <where>
+            <if test="condition == '코드'">
+                i.idea_code = #{value}
+            </if>
+            <if test="condition == '이름' or condition == '검색기준'">
+                i.idea_name LIKE CONCAT('%',#{value},'%')
+            </if>
+            <if test="condition == '타입'">
+                t.type_name LIKE CONCAT('%',#{value},'%')
+            </if>
+            <if test="condition == '난이도'">
+                i.idea_rank = #{value}
+            </if>
+        </where>
+        ORDER BY
+            i.idea_code
+    </select>
+
+    <!--새로운 아이디어 입력-->
+    <insert id="insertNewIdea" parameterType="DTO">
+        INSERT INTO
+            tbl_idea(idea_name, idea_rank, type_code)
+        VALUE (#{ideaName}, #{ideaRank}, #{typeCode})
+    </insert>
+
+    <!--코드를 기준으로 아이디어 수정-->
+    <update id="updateNewIdea" parameterType="DTO">
+        UPDATE tbl_idea
+        <set>
+            <if test="ideaName != null and ideaName != ''">
+                idea_name = #{ideaName},
+            </if>
+            <if test="ideaRank > '0'">
+                idea_rank = #{ideaRank},
+            </if>
+            <if test="workCount >= '0'">
+                work_count = #{workCount},
+            </if>
+            <if test="typeCode > '0'">
+                type_code = #{typdeCode}
+            </if>
+            work_status = #{workStatus}
+        </set>
+        WHERE
+            idea_code = #{ideaCode}
+    </update>
+
+    <!--아이디어 삭제-->
+    <delete id="deleteIdea">
+        DELETE FROM tbl_idea
+        <where>
+            <if test="condition == 'deleteByCode'">
+                idea_code = #{value}
+            </if>
+            <if test="condition == 'deleteByName'">
+                idea_name LIKE CONCAT('%', #{value}, '%')
+            </if>
+            <if test="condition == 'deleteByWorkCount'">
+                work_count >= #{value}
+            </if>
+        </where>
+    </delete>
+
+    <!--tbl_idea_choice에 code입력-->
+    <insert id="insertChoice">
+        INSERT INTO tbl_idea_choice
+        VALUES (#{ideaCode},1)
+    </insert>
+
+    <!--tbl_idea_choice에 있는 idea를 불러옴-->
+    <select id="selectAllChoice" resultType="DTO">
+        SELECT i.*
+        FROM tbl_idea_choice ic
+        JOIN tbl_idea i USING (idea_code)
+        ORDER BY i.idea_code
+    </select>
+
+    <delete id="deleteChoice">
+        DELETE FROM tbl_idea_choice
+        WHERE idea_code = #{ideaCode}
+    </delete>
+
+</mapper>
